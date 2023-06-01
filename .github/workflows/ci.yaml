@@ -14,21 +14,23 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: true
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v3
         with:
           python-version: "3.8"
       - name: Install build dependencies
         run: |
           pip install --upgrade pip setuptools wheel cibuildwheel
+      - name: Set version
+        run: python setup.py setopt --command metadata --option version --set-value ${{ github.sha }}
       - name: Build wheel
         run: |
           cibuildwheel --output-dir dist
         env:
-          CIBW_BUILD: cp3?-* pp3?-*
-      - uses: actions/upload-artifact@v2
+          CIBW_BUILD: cp3?-*
+      - uses: actions/upload-artifact@v3
         with:
           name: dist
           path: dist
@@ -40,19 +42,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: true
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v3
         with:
           python-version: "3.8"
       - name: Install build dependencies
         run: |
           pip install --upgrade pip setuptools
-      - name: Build wheel
+      - name: Set version
+        run: python setup.py setopt --command metadata --option version --set-value ${{ github.sha }}
+      - name: Build sdist
         run: |
           python setup.py sdist
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: dist
           path: dist
@@ -65,12 +69,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: dist
           path: dist
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v3
         with:
           python-version: "3.8"
       - name: Install publish dependencies
@@ -80,8 +84,8 @@ jobs:
         run: |
           twine check --strict dist/*
       - name: Upload to PyPI
-        run: |
-          twine upload --verbose --skip-existing dist/*
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        uses: pypa/gh-action-pypi-publish@v1.5.0
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_TOKEN }}
+          repository_url: https://test.pypi.org/legacy
